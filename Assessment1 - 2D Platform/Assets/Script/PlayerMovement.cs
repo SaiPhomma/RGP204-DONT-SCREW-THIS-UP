@@ -29,10 +29,26 @@ public class PlayerMovement : MonoBehaviour
            
             
         
-        if(Input.GetKey(KeyCode.Space))
-            body.linearVelocity = new Vector2(body.linearVelocity.x, speed);
+        if(Input.GetKey(KeyCode.Space) &&  grounded)
+            Jump();
         
         //set animator parameters
         anim.SetBool("walk", horizontalInput != 0);
+        anim.SetBool("grounded",  grounded);
     }
+
+    private void Jump()
+    {
+        body.linearVelocity = new Vector2(body.linearVelocity.x, speed);
+        anim.SetTrigger("jump");
+        grounded = false;
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if(collision.gameObject.tag == "Ground")
+            grounded = true;
+        
+    }
+    
 }
