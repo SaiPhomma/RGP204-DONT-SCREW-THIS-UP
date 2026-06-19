@@ -2,9 +2,21 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
+    [Header("Movement Parameters")]
     [SerializeField] private float speed;
-    [SerializeField] private float jumpForce;
+    [SerializeField] private float jumpPower;
+    
+    [Header("Coyote Time")]
+    [SerializeField] private float coyoteTime;
+    private float coyoteCounter;
+    
+    [Header("Multiple Jumps")]
+    [SerializeField] private int extraJumps;
+    private int jumpCounter;
+    
+    [Header("Layer")]
     [SerializeField] private LayerMask groundLayer;
+    
     private Rigidbody2D body;
     private Animator anim;
     private BoxCollider2D boxCollider;
@@ -19,7 +31,9 @@ public class PlayerMovement : MonoBehaviour
 
     private void Update()
     {
+        //player movement
         float horizontalInput =  Input.GetAxis("Horizontal");
+        body.linearVelocity = new Vector2(horizontalInput * speed, body.linearVelocity.y);
         
         //flip player when moving left-right
         if(horizontalInput > 0.01f)
@@ -30,21 +44,49 @@ public class PlayerMovement : MonoBehaviour
         //set animator parameters
             anim.SetBool("walk", horizontalInput != 0);
             anim.SetBool("grounded",  isGrounded());
-           
-        if(Input.GetKey(KeyCode.Space) &&  isGrounded())
+            
+        //player jump logic
+        if (Input.GetKeyDown(KeyCode.Space))
             Jump();
+        
+        //adjustable jump height
+        if (Input.GetKeyUp(KeyCode.Space) && body.linearVelocity.y > 0)
+            body.linearVelocity = new Vector2(body.linearVelocity.x, body.linearVelocity.y / 2);
+
+        body.gravityScale = 7;
+        body.linearVelocity = new Vector2(horizontalInput * speed, body.linearVelocity.y);
+        
+        if (isGrounded())
+        {
+            coyoteCounter = coyoteTime;
+            jumpCounter = extraJumps;
+        }
+        else
+        {
+            coyoteCounter -= Time.deltaTime;
+        }
     }
 
     private void Jump()
     {
+        if(coyoteCounter <=0 && jumpCounter <= 0) return;
+        
         if (isGrounded())
         {
-            body.linearVelocity = new Vector2(body.linearVelocity.x, jumpForce);
-            anim.SetTrigger("jump");
+            body.linearVelocity = new Vector2(body.linearVelocity.x, jumpPower);
         }
-        else 
+        else
         {
-            body.linearVelocity = new Vector2(-Mathf.Sign(transform.localScale.x) * jumpForce, body.linearVelocity.y);
+            if(coyoteCounter > 0)
+                body.linearVelocity = new Vector2(body.linearVelocity.x, jumpPower);
+            else
+            {
+                if (jumpCounter > 0)
+                {
+                    body.linearVelocity = new Vector2(body.linearVelocity.x, jumpPower);
+                    jumpCounter--;
+                }
+            }
         }
     }
 
