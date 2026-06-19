@@ -1,24 +1,25 @@
-using System;
 using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
     [SerializeField] private float speed;
+    [SerializeField] private float jumpForce;
+    [SerializeField] private LayerMask groundLayer;
     private Rigidbody2D body;
     private Animator anim;
-    private bool grounded;
+    private BoxCollider2D boxCollider;
 
     private void Awake()
     {
         //grab references
         body = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
+        boxCollider = GetComponent<BoxCollider2D>();
     }
 
     private void Update()
     {
-        float horizontalInput = Input.GetAxis("Horizontal");
-        body.linearVelocity = new Vector2(horizontalInput * speed, body.linearVelocity.y);
+        float horizontalInput =  Input.GetAxis("Horizontal");
         
         //flip player when moving left-right
         if(horizontalInput > 0.01f)
@@ -26,29 +27,30 @@ public class PlayerMovement : MonoBehaviour
         else if (horizontalInput < -0.01f)
             transform.localScale = new Vector3(-1, 1, 1);
         
-           
-            
-        
-        if(Input.GetKey(KeyCode.Space) &&  grounded)
-            Jump();
-        
         //set animator parameters
-        anim.SetBool("walk", horizontalInput != 0);
-        anim.SetBool("grounded",  grounded);
+            anim.SetBool("walk", horizontalInput != 0);
+            anim.SetBool("grounded",  isGrounded());
+           
+        if(Input.GetKey(KeyCode.Space) &&  isGrounded())
+            Jump();
     }
 
     private void Jump()
     {
-        body.linearVelocity = new Vector2(body.linearVelocity.x, speed);
-        anim.SetTrigger("jump");
-        grounded = false;
+        if (isGrounded())
+        {
+            body.linearVelocity = new Vector2(body.linearVelocity.x, jumpForce);
+            anim.SetTrigger("jump");
+        }
+        else 
+        {
+            body.linearVelocity = new Vector2(-Mathf.Sign(transform.localScale.x) * jumpForce, body.linearVelocity.y);
+        }
     }
 
-    private void OnCollisionEnter2D(Collision2D collision)
+    private bool isGrounded()
     {
-        if(collision.gameObject.tag == "Ground")
-            grounded = true;
-        
+        RaycastHit2D raycastHit = Physics2D.BoxCast(boxCollider.bounds.center, boxCollider.bounds.size, 0, Vector2.down, 0.1f, groundLayer);
+        return raycastHit.collider != null;
     }
-    
 }
